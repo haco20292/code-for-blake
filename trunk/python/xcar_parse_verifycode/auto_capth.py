@@ -43,7 +43,12 @@ def XcarUrl2Text(url):
 	tvalue = 'xcar_verifycode.jpg'
 	Jpg2TwoValue(jpg, tvalue)
 	return Pic2String(tvalue)
-
+def Flash2Text(flashfile):
+	jpg = flashfile + '.jpg'
+	Flash2Jpg(flashfile, jpg)
+	Jpg2TwoValue(jpg, jpg)
+	return Pic2String(jpg)
+	
 if __name__ == '__main__':
 	#DownloadUrl('http://www.xcar.com.cn/bbs/include/image_pwd.php?ssid=1374051515', 'proxy.pac')
 	print XcarUrl2Text('http://www.xcar.com.cn/bbs/include/image_pwd.php?ssid=1374051515')
