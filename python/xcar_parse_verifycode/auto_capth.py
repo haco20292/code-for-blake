@@ -1,8 +1,7 @@
-import win32com.client
-import pythoncom
-import os
-import urllib2
+import os,platform
+import urllib2, subprocess
 from PIL import Image,ImageFilter,ImageEnhance
+LINUX = platform.system() == 'Linux'
 def DownloadUrl(url, filename):
 		#urllib.urlretrieve(url, filename)
 		proxy = urllib2.ProxyHandler({'http': 'http://web-proxy.oa.com:8080'})
@@ -14,6 +13,8 @@ def DownloadUrl(url, filename):
 		content = opener.open(url).read()
 		file(filename, 'w').write(content)
 def Flash2Jpg(flashfile, jpgfile):
+	import win32com.client
+	import pythoncom
 	SWFToImage = win32com.client.Dispatch("SWFToImage.SWFToImageObject")
 	#SWFToImage = CreateObject("SWFToImage.SWFToImageObject")
 	if not os.path.exists(flashfile):
@@ -25,6 +26,13 @@ def Flash2Jpg(flashfile, jpgfile):
 	SWFToImage.Execute_GetImage()
 	SWFToImage.SaveToFile(jpgfile) #"movie_with_dynamic_data.jpg"
 	SWFToImage.Execute_End() # ' end conversion
+def Flash2JpgLinux(flashfile, jpgfile):
+	if not os.path.exists(flashfile):
+		raise ValueError, "not exist file:%s" % flashfile
+	CMD_TEMPLATE ='gnash -j320 -k240 --screenshot last --screenshot-file %s -r1 --hide-menubar --max-advances 1 %s'
+	cmd = CMD_TEMPLATE % (jpgfile, flashfile)
+	os.system(cmd)
+
 def Jpg2TwoValue(jpgfile, tvaluefile):
 	im = Image.open(jpgfile)	#.convert('L').point(lambda x: 255 if x > 127 else 0)
 	im = im.filter(ImageFilter.MedianFilter())
@@ -32,8 +40,9 @@ def Jpg2TwoValue(jpgfile, tvaluefile):
 	im = im.convert('L').point(lambda x: 255 if x > 127 else 0)
 	im.save(tvaluefile)
 def Pic2String(picfile):
-	ret = os.system('tesseract %s result -l xca' % picfile)
-	return file('result.txt').readline()
+	result = picfile + '.txt'
+	ret = subprocess.call(['tesseract', picfile, picfile, '-l xca'])
+	return file(result).readline()[:-1]
 def XcarUrl2Text(url):
 	#os.environ['http_proxy'] = 'http://proxy.tencent.com:8080'
 	swf = 'xcar_verifycode.swf'
@@ -45,7 +54,11 @@ def XcarUrl2Text(url):
 	return Pic2String(tvalue)
 def Flash2Text(flashfile):
 	jpg = flashfile + '.jpg'
-	Flash2Jpg(flashfile, jpg)
+	if LINUX:
+		Flash2JpgLinux(flashfile, jpg)
+	else:
+		Flash2Jpg(flashfile, jpg)
+
 	Jpg2TwoValue(jpg, jpg)
 	return Pic2String(jpg)
 	
